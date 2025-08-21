@@ -6,8 +6,6 @@ import mill.*
 import kotlinlib.*
 import kotlinlib.ksp.Ksp2Module
 
-import scala.reflect.io.File
-
 object whodat extends MicronautModule {
 
   override def repositoriesTask: Task[Seq[Repository]] = Task.Anon {
@@ -30,6 +28,8 @@ object whodat extends MicronautModule {
       mvn"io.micronaut.kotlin:micronaut-kotlin-runtime",
     )
 
+    override def kspArgs = super.kspArgs() ++ Seq("-jdk-home", System.getenv("JAVA_HOME"))
+
     def kotlinSymbolProcessors = Seq(
       mvn"io.micronaut:micronaut-inject-kotlin:4.9.9",
       mvn"io.micronaut:micronaut-inject-kotlin-test:4.9.9",
@@ -39,8 +39,15 @@ object whodat extends MicronautModule {
       super.kspProcessorOptions() ++ Map(
         "micronaut.processing.module" -> moduleSegments.render,
         "micronaut.processing.icnremental" -> "true",
-
       )
+    }
+
+    override def resources: T[Seq[PathRef]] = Task {
+      super.resources() ++ Seq(generatedSourcesWithKSP().resources)
+    }
+
+    override def runClasspath: T[Seq[PathRef]] = Task {
+      super.runClasspath() ++ Seq(generatedSourcesWithKSP().classes)
     }
 
   }
